@@ -9,20 +9,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalContent = document.getElementById('analysisContent');
     const closeButton = document.querySelector('.close-button');
     const filterButtons = document.querySelectorAll('.filter-btn');
+    const initialState = document.getElementById('initialState');
+    const errorState = document.getElementById('errorState');
 
     let currentResults = [];
+    let currentAnalysis = null;
     let isLoading = false;
 
     searchButton.addEventListener('click', handleSearch);
     searchInput.addEventListener('keypress', e => {
         if (e.key === 'Enter') handleSearch();
     });
-    closeButton.addEventListener('click', () => hideModal());
-    modal.addEventListener('click', e => {
+    closeButton?.addEventListener('click', hideModal);
+    modal?.addEventListener('click', e => {
         if (e.target === modal) hideModal();
     });
 
-    initializeAnimations();
+    filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            filterResults(button.textContent.toLowerCase());
+        });
+    });
 
     async function handleSearch() {
         const query = searchInput.value.trim();
@@ -30,6 +39,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             setLoading(true);
+            hideElement(initialState);
+            hideElement(resultsSection);
+            hideElement(errorState);
+            showElement(loadingSpinner);
             clearResults();
 
             const response = await fetch('/search', {
@@ -42,6 +55,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const results = await response.json();
             currentResults = results;
+
+            // Add artificial delay for better Experience
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            hideElement(loadingSpinner);
+            hideElement(initialState);
+            showElement(resultsSection);
             
             if (results.length > 0) {
                 showResultsWithAnimation(results);
@@ -50,14 +70,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         } catch (error) {
-            showError('An error occurred while searching. Please try again.');
             console.error('Search error:', error);
+            showError('An error occurred while searching. Please try again.');
         } finally {
             setLoading(false);
         }
     }
 
- 
     function showResultsWithAnimation(results) {
         resultsSection.style.display = 'block';
         
@@ -101,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <button class="analyze-btn" onclick="analyzeVideo('${result.video_id}')">
                     <i class="fas fa-microscope"></i>
-                    Detailed Analysis
+                    <span>Detailed Analysis</span>
                 </button>
             </div>
         `;
@@ -109,26 +128,43 @@ document.addEventListener('DOMContentLoaded', function() {
         return card;
     }
 
-
+    // Video Analysis
     window.analyzeVideo = async function(videoId) {
         try {
             showModal();
-            setLoading(true);
+            modalContent.innerHTML = `
+                <div class="spinner">
+                    <div class="spinner-ring"></div>
+                    <p>Analyzing video...</p>
+                </div>
+            `;
+            
+   
+            document.getElementById('downloadReport').style.display = 'none';
 
             const response = await fetch(`/analyze/${videoId}`);
             if (!response.ok) throw new Error('Analysis failed');
 
             const data = await response.json();
+            currentAnalysis = data.analysis;
+            
+            // Add small delay for loading state visibility
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             modalContent.innerHTML = `
                 <div class="analysis-content">
                     <div class="analysis-section">
-                        <i class="fas fa-list-ul"></i>
-                        <h3>Key Findings</h3>
+                        <h3>
+                            <i class="fas fa-list-ul"></i>
+                            Key Findings
+                        </h3>
                         ${formatAnalysis(data.analysis)}
                     </div>
                 </div>
             `;
+
+            // Show download button after analysis is complete
+            document.getElementById('downloadReport').style.display = 'flex';
 
         } catch (error) {
             modalContent.innerHTML = `
@@ -137,17 +173,58 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p>Failed to analyze video. Please try again.</p>
                 </div>
             `;
-        } finally {
-            setLoading(false);
+            // To Hide download button on error
+            document.getElementById('downloadReport').style.display = 'none';
+            currentAnalysis = null;
         }
     };
 
-    filterButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            filterResults(button.textContent.toLowerCase());
-        });
+    document.getElementById('downloadReport').addEventListener('click', async function() {
+        if (!currentAnalysis) {
+            alert('Please wait for the analysis to complete.');
+            return;
+        }
+
+        try {
+            const button = this;
+            const buttonContent = button.querySelector('.button-content');
+            const buttonLoader = button.querySelector('.button-loader');
+
+            button.disabled = true;
+            buttonContent.classList.add('hidden');
+            buttonLoader.classList.remove('hidden');
+
+            const response = await fetch('/generate-report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    analysis: currentAnalysis
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to generate report');
+
+            const data = await response.json();
+            
+            const link = document.createElement('a');
+            link.href = data.report_url;
+            link.click();
+
+        } catch (error) {
+            console.error('Report generation error:', error);
+            alert('Failed to generate report. Please try again.');
+        } finally {
+    
+            const button = document.getElementById('downloadReport');
+            const buttonContent = button.querySelector('.button-content');
+            const buttonLoader = button.querySelector('.button-loader');
+            
+            button.disabled = false;
+            buttonContent.classList.remove('hidden');
+            buttonLoader.classList.add('hidden');
+        }
     });
 
     function filterResults(filterType) {
@@ -170,8 +247,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function setLoading(loading) {
         isLoading = loading;
-        loadingSpinner.classList.toggle('hidden', !loading);
         searchButton.disabled = loading;
+        const buttonContent = searchButton.querySelector('.button-content');
+        const buttonLoader = searchButton.querySelector('.button-loader');
+        
+        if (loading) {
+            buttonContent.classList.add('hidden');
+            buttonLoader.classList.remove('hidden');
+        } else {
+            buttonContent.classList.remove('hidden');
+            buttonLoader.classList.add('hidden');
+        }
     }
 
     function clearResults() {
@@ -189,13 +275,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showError(message) {
-        resultsGrid.innerHTML = `
-            <div class="error-message">
-                <i class="fas fa-exclamation-circle"></i>
-                <h3>Error</h3>
-                <p>${message}</p>
-            </div>
-        `;
+        hideElement(loadingSpinner);
+        hideElement(resultsSection);
+        showElement(errorState);
+        document.getElementById('errorMessage').textContent = message;
     }
 
     function showModal() {
@@ -206,6 +289,23 @@ document.addEventListener('DOMContentLoaded', function() {
     function hideModal() {
         modal.classList.add('hidden');
         document.body.style.overflow = '';
+        currentAnalysis = null;
+        const button = document.getElementById('downloadReport');
+        const buttonContent = button.querySelector('.button-content');
+        const buttonLoader = button.querySelector('.button-loader');
+        
+        button.disabled = false;
+        button.style.display = 'none';
+        buttonContent.classList.remove('hidden');
+        buttonLoader.classList.add('hidden');
+    }
+
+    function showElement(element) {
+        element?.classList.remove('hidden');
+    }
+
+    function hideElement(element) {
+        element?.classList.add('hidden');
     }
 
     function formatTimeRange(start, end) {
@@ -235,22 +335,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function formatAnalysis(text) {
+        if (!text) return '';
         return text.split('\n').map(paragraph => 
             paragraph.trim() ? `<p>${paragraph}</p>` : ''
         ).join('');
-    }
-
-    function initializeAnimations() {
-        document.documentElement.style.scrollBehavior = 'smooth';
-
-        const buttons = document.querySelectorAll('button');
-        buttons.forEach(button => {
-            button.addEventListener('mouseenter', () => {
-                button.style.transform = 'translateY(-2px)';
-            });
-            button.addEventListener('mouseleave', () => {
-                button.style.transform = 'translateY(0)';
-            });
-        });
     }
 });
