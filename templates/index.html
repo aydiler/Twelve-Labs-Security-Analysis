@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Video Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-wrapper">
+        <nav class="navbar">
+            <div class="nav-content">
+                <div class="nav-logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Surveillance Analysis</span>
+                </div>
+                <div class="nav-links">
+                    <a href="#" class="active">Dashboard</a>
+                    <a href="#">Analytics</a>
+                    <a href="#">Reports</a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="hero">
+            <div class="hero-content">
+                <h1>Video Surveillance Analysis</h1>
+                <p>AI powered CCTV/DashCam Footage analysis with Reporting</p>
+                <div class="search-container">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="searchInput" placeholder="Search for incidents, objects, or activities...">
+                        <button id="searchButton">
+                            <i class="fas fa-radar"></i>
+                            Analyze
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-background"></div>
+        </div>
+
+        <div class="content-section">
+            <div id="loadingSpinner" class="spinner hidden">
+                <div class="spinner-ring"></div>
+                <span>Processing Video Analysis</span>
+            </div>
+
+            <div id="resultsSection" class="results-section">
+                <div class="results-header">
+                    <h2>Analysis Results</h2>
+                    <div class="results-filters">
+                        <button class="filter-btn active">All</button>
+                        <button class="filter-btn">High Confidence</button>
+                        <button class="filter-btn">Recent</button>
+                    </div>
+                </div>
+                <div id="resultsGrid" class="results-grid"></div>
+            </div>
+        </div>
+
+        <!-- Analysis Modal -->
+        <div id="analysisModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        <i class="fas fa-chart-bar"></i>
+                        <h2>Detailed Analysis</h2>
+                    </div>
+                    <button class="close-button">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="analysisContent" class="modal-body"></div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
