@@ -66,6 +66,8 @@ Demo and Video Explanation:
 
 🧠 **AI Driven Insights Report**: Accurate and efficient surveillance analysis report.
 
+![](https://github.com/Hrishikesh332/Twelve-Labs-Survillance-Aanlysis/blob/main/src/workflow-app.png)
+
 ## Tech Stack
 
 - **Frontend**: HTML, CSS, JavaScript
