@@ -88,11 +88,8 @@ class ReportGenerator:
             ['REPORT DETAILS', ''],
             ['Report ID:', report_id],
             ['Generated Date:', current_time.strftime("%Y-%m-%d %H:%M:%S")],
-            ['Classification:', 'CONFIDENTIAL'],
             ['Priority Level:', 'HIGH'],
-            ['Region:', 'URBAN-SECTOR-7'],
             ['Analysis Type:', 'VIDEO SURVEILLANCE'],
-            ['Status:', 'ACTIVE']
         ]
 
         table = Table(metadata, colWidths=[2.5*inch, 4*inch])

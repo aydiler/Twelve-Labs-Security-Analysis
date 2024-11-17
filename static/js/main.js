@@ -1,48 +1,49 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // DOM Elements
+    const elements = {
+        searchInput: document.getElementById('searchInput'),
+        searchButton: document.getElementById('searchButton'),
+        resultsGrid: document.getElementById('resultsGrid'),
+        resultsSection: document.getElementById('resultsSection'),
+        loadingSpinner: document.getElementById('loadingSpinner'),
+        modal: document.getElementById('analysisModal'),
+        modalContent: document.getElementById('analysisContent'),
+        closeButton: document.querySelector('.close-button'),
+        downloadBtn: document.querySelector('.download-button'),
+        errorState: document.getElementById('errorState'),
+        retryButton: document.querySelector('.retry-btn')
+    };
 
-    const searchInput = document.getElementById('searchInput');
-    const searchButton = document.getElementById('searchButton');
-    const resultsGrid = document.getElementById('resultsGrid');
-    const resultsSection = document.getElementById('resultsSection');
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    const modal = document.getElementById('analysisModal');
-    const modalContent = document.getElementById('analysisContent');
-    const closeButton = document.querySelector('.close-button');
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    const initialState = document.getElementById('initialState');
-    const errorState = document.getElementById('errorState');
+    // State Management
+    const state = {
+        currentResults: [],
+        currentAnalysis: null,
+        isLoading: false,
+        isGeneratingReport: false
+    };
 
-    let currentResults = [];
-    let currentAnalysis = null;
-    let isLoading = false;
-
-    searchButton.addEventListener('click', handleSearch);
-    searchInput.addEventListener('keypress', e => {
+    // Event Listeners
+    elements.searchButton?.addEventListener('click', handleSearch);
+    elements.searchInput?.addEventListener('keypress', e => {
         if (e.key === 'Enter') handleSearch();
     });
-    closeButton?.addEventListener('click', hideModal);
-    modal?.addEventListener('click', e => {
-        if (e.target === modal) hideModal();
+    elements.closeButton?.addEventListener('click', hideModal);
+    elements.modal?.addEventListener('click', e => {
+        if (e.target === elements.modal) hideModal();
     });
+    elements.retryButton?.addEventListener('click', handleSearch);
+    elements.downloadBtn?.addEventListener('click', handleDownload);
 
-    filterButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            filterResults(button.textContent.toLowerCase());
-        });
-    });
-
+    // Search Handler
     async function handleSearch() {
-        const query = searchInput.value.trim();
-        if (!query || isLoading) return;
+        const query = elements.searchInput.value.trim();
+        if (!query || state.isLoading) return;
 
         try {
             setLoading(true);
-            hideElement(initialState);
-            hideElement(resultsSection);
-            hideElement(errorState);
-            showElement(loadingSpinner);
+            hideElement(elements.resultsSection);
+            hideElement(elements.errorState);
+            showElement(elements.loadingSpinner);
             clearResults();
 
             const response = await fetch('/search', {
@@ -54,20 +55,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!response.ok) throw new Error('Search failed');
 
             const results = await response.json();
-            currentResults = results;
-
-            // Add artificial delay for better Experience
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            state.currentResults = results;
             
-            hideElement(loadingSpinner);
-            hideElement(initialState);
-            showElement(resultsSection);
+            hideElement(elements.loadingSpinner);
+            showElement(elements.resultsSection);
             
-            if (results.length > 0) {
-                showResultsWithAnimation(results);
-            } else {
-                showNoResults();
-            }
+            results.length > 0 ? displayResults(results) : showNoResults();
 
         } catch (error) {
             console.error('Search error:', error);
@@ -77,42 +70,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function showResultsWithAnimation(results) {
-        resultsSection.style.display = 'block';
-        
-        results.forEach((result, index) => {
-            setTimeout(() => {
-                const card = createResultCard(result);
-                resultsGrid.appendChild(card);
-                
-                // Fade in animation
-                requestAnimationFrame(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                });
-            }, index * 100);
+    // Display Results
+    function displayResults(results) {
+        elements.resultsGrid.innerHTML = '';
+        results.forEach(result => {
+            const card = createResultCard(result);
+            elements.resultsGrid.appendChild(card);
         });
     }
 
     function createResultCard(result) {
         const card = document.createElement('div');
         card.className = 'result-card';
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'all 0.3s ease';
-
+        
         const confidenceClass = getConfidenceClass(result.confidence);
-        const confidenceIcon = getConfidenceIcon(result.confidence);
-
+        const score = Math.round(result.score);
+        
         card.innerHTML = `
             <div class="confidence-badge ${confidenceClass}">
-                ${confidenceIcon}
+                <i class="fas fa-check-circle"></i>
                 ${result.confidence} Confidence
             </div>
             <div class="result-content">
                 <div class="result-score">
                     <i class="fas fa-chart-line"></i>
-                    <span>Match Score: ${result.score}%</span>
+                    <span>Match Score: ${score}%</span>
                 </div>
                 <div class="result-time">
                     <i class="fas fa-clock"></i>
@@ -130,174 +112,208 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Video Analysis
     window.analyzeVideo = async function(videoId) {
+        showModal();
+        
         try {
-            showModal();
-            modalContent.innerHTML = `
+            elements.modalContent.innerHTML = `
                 <div class="spinner">
                     <div class="spinner-ring"></div>
                     <p>Analyzing video...</p>
                 </div>
             `;
             
-   
-            document.getElementById('downloadReport').style.display = 'none';
-
+            elements.downloadBtn.disabled = true;
+    
+            console.log('Analyzing video:', videoId); 
+    
             const response = await fetch(`/analyze/${videoId}`);
-            if (!response.ok) throw new Error('Analysis failed');
-
             const data = await response.json();
-            currentAnalysis = data.analysis;
+    
+            if (!response.ok) {
+                throw new Error(data.error || 'Analysis failed');
+            }
+    
+            console.log('Analysis response:', data); 
+    
+            state.currentAnalysis = data.analysis;
+            state.currentVideoUrl = data.video_url;
             
-            // Add small delay for loading state visibility
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            modalContent.innerHTML = `
-                <div class="analysis-content">
-                    <div class="analysis-section">
-                        <h3>
-                            <i class="fas fa-list-ul"></i>
-                            Key Findings
-                        </h3>
-                        ${formatAnalysis(data.analysis)}
+            // Construct modal content
+            let modalHTML = `<div class="analysis-content">`;
+    
+            // Add video section if URL is available
+            if (data.video_url) {
+                console.log('Adding video player with URL:', data.video_url); // Debug log
+                modalHTML += `
+                    <div class="video-section mb-6">
+                        <div class="video-container relative w-full aspect-video rounded-lg overflow-hidden bg-black">
+                            <video 
+                                id="analysis-video"
+                                class="w-full h-full"
+                                controls
+                                preload="metadata"
+                            >
+                                <source src="${data.video_url}" type="application/x-mpegURL">
+                                Your browser does not support HLS video playback.
+                            </video>
+                        </div>
                     </div>
+                `;
+            } else {
+                console.log('No video URL available'); 
+                modalHTML += `
+                    <div class="video-section mb-6">
+                        <div class="flex items-center justify-center w-full aspect-video rounded-lg bg-gray-100">
+                            <div class="text-center p-4">
+                                <i class="fas fa-video-slash text-gray-400 text-4xl mb-2"></i>
+                                <p class="text-gray-600">Video preview not available</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+    
+            // Add analysis section
+            modalHTML += `
+                <div class="analysis-section">
+                    <h3><i class="fas fa-list-ul"></i> Key Findings</h3>
+                    ${formatAnalysis(state.currentAnalysis)}
                 </div>
-            `;
-
-            // Show download button after analysis is complete
-            document.getElementById('downloadReport').style.display = 'flex';
-
+            </div>`;
+    
+            elements.modalContent.innerHTML = modalHTML;
+    
+            // Setup video player if available
+            const video = document.getElementById('analysis-video');
+            if (video) {
+                // Check if HLS.js is needed and available
+                if (Hls.isSupported()) {
+                    const hls = new Hls();
+                    hls.loadSource(data.video_url);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                        console.error('HLS error:', data);
+                        handleVideoError();
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    // For Safari, which has native HLS support
+                    video.src = data.video_url;
+                } else {
+                    console.error('HLS is not supported in this browser');
+                    handleVideoError();
+                }
+    
+                video.addEventListener('error', handleVideoError);
+            }
+    
+            elements.downloadBtn.disabled = false;
+    
         } catch (error) {
-            modalContent.innerHTML = `
-                <div class="error-message">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <p>Failed to analyze video. Please try again.</p>
+            console.error('Analysis error:', error);
+            elements.modalContent.innerHTML = `
+                <div class="error-message p-4 bg-red-50 rounded-lg">
+                    <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                    <p class="text-red-700">Failed to analyze video: ${error.message}</p>
                 </div>
             `;
-            // To Hide download button on error
-            document.getElementById('downloadReport').style.display = 'none';
-            currentAnalysis = null;
+            elements.downloadBtn.disabled = true;
         }
     };
 
-    document.getElementById('downloadReport').addEventListener('click', async function() {
-        if (!currentAnalysis) {
-            alert('Please wait for the analysis to complete.');
-            return;
-        }
+    // Download Handler
+    async function handleDownload(e) {
+        e.preventDefault();
+        
+        if (!state.currentAnalysis || state.isGeneratingReport) return;
+
+        const buttonContent = this.querySelector('.button-content');
+        const buttonLoader = this.querySelector('.button-loader');
 
         try {
-            const button = this;
-            const buttonContent = button.querySelector('.button-content');
-            const buttonLoader = button.querySelector('.button-loader');
-
-            button.disabled = true;
-            buttonContent.classList.add('hidden');
-            buttonLoader.classList.remove('hidden');
+            state.isGeneratingReport = true;
+            this.disabled = true;
+            toggleButtonLoader(true, buttonContent, buttonLoader);
 
             const response = await fetch('/generate-report', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    analysis: currentAnalysis
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ analysis: state.currentAnalysis })
             });
 
             if (!response.ok) throw new Error('Failed to generate report');
 
             const data = await response.json();
             
-            const link = document.createElement('a');
-            link.href = data.report_url;
-            link.click();
+            if (data.success && data.report_url) {
+                window.location.href = data.report_url;
+            } else {
+                throw new Error('Report generation failed');
+            }
 
         } catch (error) {
             console.error('Report generation error:', error);
             alert('Failed to generate report. Please try again.');
         } finally {
-    
-            const button = document.getElementById('downloadReport');
-            const buttonContent = button.querySelector('.button-content');
-            const buttonLoader = button.querySelector('.button-loader');
-            
-            button.disabled = false;
-            buttonContent.classList.remove('hidden');
-            buttonLoader.classList.add('hidden');
+            state.isGeneratingReport = false;
+            this.disabled = false;
+            toggleButtonLoader(false, buttonContent, buttonLoader);
         }
-    });
-
-    function filterResults(filterType) {
-        if (!currentResults.length) return;
-
-        const filteredResults = currentResults.filter(result => {
-            switch(filterType) {
-                case 'high confidence':
-                    return result.confidence.toLowerCase() === 'high';
-                case 'recent':
-                    return result.start < 60;
-                default:
-                    return true;
-            }
-        });
-
-        clearResults();
-        showResultsWithAnimation(filteredResults);
     }
 
+    // Utility Functions
     function setLoading(loading) {
-        isLoading = loading;
-        searchButton.disabled = loading;
-        const buttonContent = searchButton.querySelector('.button-content');
-        const buttonLoader = searchButton.querySelector('.button-loader');
-        
-        if (loading) {
-            buttonContent.classList.add('hidden');
-            buttonLoader.classList.remove('hidden');
-        } else {
-            buttonContent.classList.remove('hidden');
-            buttonLoader.classList.add('hidden');
+        state.isLoading = loading;
+        if (elements.searchButton) {
+            elements.searchButton.disabled = loading;
+            const buttonContent = elements.searchButton.querySelector('.button-content');
+            const buttonLoader = elements.searchButton.querySelector('.button-loader');
+            toggleButtonLoader(loading, buttonContent, buttonLoader);
+        }
+    }
+
+    function toggleButtonLoader(show, content, loader) {
+        content.style.display = show ? 'none' : 'flex';
+        loader.style.display = show ? 'flex' : 'none';
+    }
+
+    function showModal() {
+        elements.modal?.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hideModal() {
+        elements.modal?.classList.add('hidden');
+        document.body.style.overflow = '';
+        state.currentAnalysis = null;
+        if (elements.downloadBtn) {
+            elements.downloadBtn.disabled = true;
         }
     }
 
     function clearResults() {
-        resultsGrid.innerHTML = '';
+        if (elements.resultsGrid) {
+            elements.resultsGrid.innerHTML = '';
+        }
     }
 
     function showNoResults() {
-        resultsGrid.innerHTML = `
+        elements.resultsGrid.innerHTML = `
             <div class="no-results">
                 <i class="fas fa-search"></i>
                 <h3>No Results Found</h3>
-                <p>Try different search terms or filters</p>
+                <p>Try different search terms</p>
             </div>
         `;
     }
 
     function showError(message) {
-        hideElement(loadingSpinner);
-        hideElement(resultsSection);
-        showElement(errorState);
-        document.getElementById('errorMessage').textContent = message;
-    }
-
-    function showModal() {
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function hideModal() {
-        modal.classList.add('hidden');
-        document.body.style.overflow = '';
-        currentAnalysis = null;
-        const button = document.getElementById('downloadReport');
-        const buttonContent = button.querySelector('.button-content');
-        const buttonLoader = button.querySelector('.button-loader');
-        
-        button.disabled = false;
-        button.style.display = 'none';
-        buttonContent.classList.remove('hidden');
-        buttonLoader.classList.add('hidden');
+        hideElement(elements.loadingSpinner);
+        hideElement(elements.resultsSection);
+        showElement(elements.errorState);
+        const errorMessage = document.getElementById('errorMessage');
+        if (errorMessage) {
+            errorMessage.textContent = message;
+        }
     }
 
     function showElement(element) {
@@ -326,18 +342,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function getConfidenceIcon(confidence) {
-        switch(confidence.toLowerCase()) {
-            case 'high': return '<i class="fas fa-check-circle"></i>';
-            case 'medium': return '<i class="fas fa-exclamation-circle"></i>';
-            default: return '<i class="fas fa-question-circle"></i>';
+    function formatAnalysis(text) {
+        if (!text) return '<p class="text-gray-500">No analysis available.</p>';
+        
+        try {
+            return text.split('\n\n')
+                .map(paragraph => paragraph.trim())
+                .filter(paragraph => paragraph)
+                .map(paragraph => `<p class="mb-4 last:mb-0">${paragraph}</p>`)
+                .join('');
+        } catch (e) {
+            console.error('Error formatting analysis:', e);
+            return `<p class="text-gray-500">Error formatting analysis text.</p>`;
         }
     }
 
-    function formatAnalysis(text) {
-        if (!text) return '';
-        return text.split('\n').map(paragraph => 
-            paragraph.trim() ? `<p>${paragraph}</p>` : ''
-        ).join('');
+    function handleVideoError() {
+        const videoContainer = document.querySelector('.video-container');
+        if (videoContainer) {
+            videoContainer.innerHTML = `
+                <div class="flex items-center justify-center w-full h-full bg-gray-100 rounded-lg">
+                    <div class="text-center p-4">
+                        <i class="fas fa-exclamation-circle text-red-500 text-2xl mb-2"></i>
+                        <p class="text-gray-600">Failed to load video</p>
+                    </div>
+                </div>
+            `;
+        }
     }
 });
