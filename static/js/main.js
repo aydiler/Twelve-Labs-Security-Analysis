@@ -2,100 +2,107 @@ document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const elements = {
         searchInput: document.getElementById('searchInput'),
-        searchButton: document.getElementById('searchButton'),
-        resultsGrid: document.getElementById('resultsGrid'),
-        resultsSection: document.getElementById('resultsSection'),
+        suggestionsDropdown: document.getElementById('suggestionsDropdown'),
+        clearButton: document.querySelector('.clear-search'),
+        actionButton: document.getElementById('searchActionButton'),
         loadingSpinner: document.getElementById('loadingSpinner'),
+        resultsSection: document.getElementById('resultsSection'),
+        resultsGrid: document.getElementById('resultsGrid'),
+        errorState: document.getElementById('errorState'),
         modal: document.getElementById('analysisModal'),
         modalContent: document.getElementById('analysisContent'),
-        closeButton: document.querySelector('.close-button'),
-        downloadBtn: document.querySelector('.download-button'),
-        errorState: document.getElementById('errorState'),
-        retryButton: document.querySelector('.retry-btn')
+        closeButton: document.querySelector('.modal .close-button'),
+        downloadButton: document.querySelector('.download-button')
     };
 
-    // State Management
+
     const state = {
-        currentResults: [],
-        currentAnalysis: null,
         isLoading: false,
-        isGeneratingReport: false
+        currentAnalysis: null,
+        lastQuery: ''
     };
 
-    // Event Listeners
-    elements.searchButton?.addEventListener('click', handleSearch);
-    elements.searchInput?.addEventListener('keypress', e => {
-        if (e.key === 'Enter') handleSearch();
-    });
-    elements.closeButton?.addEventListener('click', hideModal);
-    elements.modal?.addEventListener('click', e => {
-        if (e.target === elements.modal) hideModal();
-    });
-    elements.retryButton?.addEventListener('click', handleSearch);
-    elements.downloadBtn?.addEventListener('click', handleDownload);
 
-    // Search Handler
+    function initializeEventListeners() {
+        elements.searchInput?.addEventListener('input', handleSearchInput);
+        elements.clearButton?.addEventListener('click', clearSearch);
+        elements.actionButton?.addEventListener('click', handleSearch);
+        elements.closeButton?.addEventListener('click', closeModal);
+        elements.downloadButton?.addEventListener('click', handleDownload);
+
+        elements.modal?.addEventListener('click', (e) => {
+            if (e.target === elements.modal) closeModal();
+        });
+    }
+
     async function handleSearch() {
         const query = elements.searchInput.value.trim();
         if (!query || state.isLoading) return;
 
-        try {
-            setLoading(true);
-            hideElement(elements.resultsSection);
-            hideElement(elements.errorState);
-            showElement(elements.loadingSpinner);
-            clearResults();
+        state.lastQuery = query;
+        setLoading(true);
 
+        try {
             const response = await fetch('/search', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({ query })
             });
 
             if (!response.ok) throw new Error('Search failed');
 
             const results = await response.json();
-            state.currentResults = results;
-            
-            hideElement(elements.loadingSpinner);
-            showElement(elements.resultsSection);
-            
-            results.length > 0 ? displayResults(results) : showNoResults();
+            displayResults(results);
 
         } catch (error) {
             console.error('Search error:', error);
-            showError('An error occurred while searching. Please try again.');
+            showError('Failed to perform search. Please try again.');
         } finally {
             setLoading(false);
         }
     }
 
-    // Display Results
-    function displayResults(results) {
-        elements.resultsGrid.innerHTML = '';
-        results.forEach(result => {
-            const card = createResultCard(result);
-            elements.resultsGrid.appendChild(card);
-        });
-    }
 
-    function createResultCard(result) {
-        const card = document.createElement('div');
-        card.className = 'result-card';
-        
-        const confidenceClass = getConfidenceClass(result.confidence);
-        const score = Math.round(result.score);
-        
-        card.innerHTML = `
-            <div class="confidence-badge ${confidenceClass}">
-                <i class="fas fa-check-circle"></i>
-                ${result.confidence} Confidence
-            </div>
-            <div class="result-content">
-                <div class="result-score">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Match Score: ${score}%</span>
+function createResultCard(result) {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    
+    const confidence = result.confidence.toLowerCase();
+    const confidenceClass = confidence === 'high' ? 'confidence-high' : 'confidence-medium';
+    const score = Math.round(result.score * 100);
+
+    card.innerHTML = `
+        <div class="result-video-container ${result.video_url ? 'loading' : ''}">
+            ${result.video_url ? `
+                <video 
+                    id="video-${result.video_id}"
+                    class="result-video"
+                    controls
+                    preload="metadata"
+                >
+                    <source src="${result.video_url}" type="application/x-mpegURL">
+                </video>
+            ` : `
+                <div class="video-placeholder">
+                    <i class="fas fa-video-slash"></i>
+                    <p>Video preview not available</p>
                 </div>
+            `}
+            <div class="video-overlay">
+                <div class="confidence-badge ${confidenceClass}">
+                    <i class="fas fa-check-circle"></i>
+                    ${result.confidence}
+                </div>
+                <div class="score-badge">
+                    <i class="fas fa-chart-line"></i>
+                    ${score}%
+                </div>
+            </div>
+        </div>
+        <div class="result-content">
+            <div class="result-info">
                 <div class="result-time">
                     <i class="fas fa-clock"></i>
                     <span>${formatTimeRange(result.start, result.end)}</span>
@@ -105,175 +112,264 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span>Detailed Analysis</span>
                 </button>
             </div>
-        `;
+        </div>
+    `;
 
-        return card;
+    if (result.video_url) {
+        const videoContainer = card.querySelector('.result-video-container');
+        const video = card.querySelector(`#video-${result.video_id}`);
+        
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(result.video_url);
+            hls.attachMedia(video);
+            
+            video.addEventListener('loadedmetadata', () => {
+                video.currentTime = result.start;
+                videoContainer.classList.remove('loading');
+            });
+
+            hls.on(Hls.Events.ERROR, () => {
+                videoContainer.innerHTML = `
+                    <div class="video-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Failed to load video</p>
+                    </div>
+                `;
+            });
+        }
     }
 
-    // Video Analysis
+    return card;
+}
+
+    function initializeVideoPlayer(videoElement, result) {
+        if (Hls.isSupported() && result.video_url) {
+            const hls = new Hls();
+            hls.loadSource(result.video_url);
+            hls.attachMedia(videoElement);
+
+            videoElement.addEventListener('loadedmetadata', () => {
+                videoElement.currentTime = result.start;
+            });
+        }
+    }
+
     window.analyzeVideo = async function(videoId) {
-        showModal();
-        
+        const modalContent = document.getElementById('analysisContent');
+        const downloadButton = document.querySelector('.download-button');
+        const modal = document.getElementById('analysisModal');
+
+        modal.classList.remove('hidden');
+        modalContent.innerHTML = `
+            <div class="spinner">
+                <div class="spinner-ring"></div>
+                <p>Analyzing video...</p>
+            </div>
+        `;
+        downloadButton.disabled = true;
+    
         try {
-            elements.modalContent.innerHTML = `
-                <div class="spinner">
-                    <div class="spinner-ring"></div>
-                    <p>Analyzing video...</p>
-                </div>
-            `;
-            
-            elements.downloadBtn.disabled = true;
-    
-            console.log('Analyzing video:', videoId); 
-    
+            console.log('Analyzing video:', videoId);
             const response = await fetch(`/analyze/${videoId}`);
             const data = await response.json();
+            console.log('Analysis response:', data);
     
             if (!response.ok) {
+                console.error('Response not OK:', response.status, response.statusText);
                 throw new Error(data.error || 'Analysis failed');
             }
     
-            console.log('Analysis response:', data); 
+            console.log('Analysis data structure:', {
+                hasVideoUrl: !!data.video_url,
+                hasAnalysis: !!data.analysis,
+                analysisLength: data.analysis ? data.analysis.length : 0,
+                analysisType: data.analysis ? typeof data.analysis : 'undefined'
+            });
     
-            state.currentAnalysis = data.analysis;
-            state.currentVideoUrl = data.video_url;
-            
-            // Construct modal content
-            let modalHTML = `<div class="analysis-content">`;
+            const analysisText = data.analysis;
+            if (!analysisText) {
+                console.error('No analysis text available');
+                throw new Error('No analysis data available');
+            }
     
-            // Add video section if URL is available
-            if (data.video_url) {
-                console.log('Adding video player with URL:', data.video_url); // Debug log
-                modalHTML += `
-                    <div class="video-section mb-6">
-                        <div class="video-container relative w-full aspect-video rounded-lg overflow-hidden bg-black">
+            const modalHTML = `
+                <div class="analysis-content">
+                    ${data.video_url ? `
+                        <div class="video-section">
                             <video 
                                 id="analysis-video"
-                                class="w-full h-full"
+                                class="analysis-video"
                                 controls
                                 preload="metadata"
                             >
                                 <source src="${data.video_url}" type="application/x-mpegURL">
-                                Your browser does not support HLS video playback.
                             </video>
                         </div>
-                    </div>
-                `;
-            } else {
-                console.log('No video URL available'); 
-                modalHTML += `
-                    <div class="video-section mb-6">
-                        <div class="flex items-center justify-center w-full aspect-video rounded-lg bg-gray-100">
-                            <div class="text-center p-4">
-                                <i class="fas fa-video-slash text-gray-400 text-4xl mb-2"></i>
-                                <p class="text-gray-600">Video preview not available</p>
-                            </div>
+                    ` : ''}
+                    <div class="analysis-text">
+                        <h3>
+                            <i class="fas fa-clipboard-list"></i>
+                            Analysis Details
+                        </h3>
+                        <div class="analysis-paragraphs">
+                            ${formatAnalysisText(analysisText)}
                         </div>
                     </div>
-                `;
-            }
-    
-            // Add analysis section
-            modalHTML += `
-                <div class="analysis-section">
-                    <h3><i class="fas fa-list-ul"></i> Key Findings</h3>
-                    ${formatAnalysis(state.currentAnalysis)}
-                </div>
-            </div>`;
-    
-            elements.modalContent.innerHTML = modalHTML;
-    
-            // Setup video player if available
-            const video = document.getElementById('analysis-video');
-            if (video) {
-                // Check if HLS.js is needed and available
-                if (Hls.isSupported()) {
-                    const hls = new Hls();
-                    hls.loadSource(data.video_url);
-                    hls.attachMedia(video);
-                    hls.on(Hls.Events.ERROR, function(event, data) {
-                        console.error('HLS error:', data);
-                        handleVideoError();
-                    });
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    // For Safari, which has native HLS support
-                    video.src = data.video_url;
-                } else {
-                    console.error('HLS is not supported in this browser');
-                    handleVideoError();
-                }
-    
-                video.addEventListener('error', handleVideoError);
-            }
-    
-            elements.downloadBtn.disabled = false;
-    
-        } catch (error) {
-            console.error('Analysis error:', error);
-            elements.modalContent.innerHTML = `
-                <div class="error-message p-4 bg-red-50 rounded-lg">
-                    <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
-                    <p class="text-red-700">Failed to analyze video: ${error.message}</p>
                 </div>
             `;
-            elements.downloadBtn.disabled = true;
+    
+            console.log('Setting modal HTML');
+            modalContent.innerHTML = modalHTML;
+    
+            if (data.video_url) {
+                console.log('Initializing video player with URL:', data.video_url);
+                const video = document.getElementById('analysis-video');
+                if (video && Hls.isSupported()) {
+                    try {
+                        const hls = new Hls();
+                        hls.loadSource(data.video_url);
+                        hls.attachMedia(video);
+                        
+                        hls.on(Hls.Events.ERROR, function(event, data) {
+                            console.error('HLS error:', event, data);
+                            if (data.fatal) {
+                                handleVideoError();
+                            }
+                        });
+    
+                        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                            console.log('Video manifest parsed successfully');
+                        });
+                    } catch (videoError) {
+                        console.error('Error initializing video:', videoError);
+                        handleVideoError();
+                    }
+                }
+            }
+    
+            window.currentAnalysis = analysisText;
+            downloadButton.disabled = false;
+    
+        } catch (error) {
+            console.error('Analysis error details:', error);
+            modalContent.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>${error.message || 'Failed to analyze video. Please try again.'}</p>
+                    <button class="retry-btn" onclick="analyzeVideo('${videoId}')">
+                        <i class="fas fa-redo"></i> Try Again
+                    </button>
+                </div>
+            `;
         }
     };
-
-    // Download Handler
-    async function handleDownload(e) {
-        e.preventDefault();
+    
+    function formatAnalysisText(text) {
+        console.log('Formatting analysis text:', text ? text.substring(0, 100) + '...' : 'null');
         
-        if (!state.currentAnalysis || state.isGeneratingReport) return;
+        if (!text) {
+            return '<p class="analysis-paragraph">No analysis available.</p>';
+        }
+    
 
-        const buttonContent = this.querySelector('.button-content');
-        const buttonLoader = this.querySelector('.button-loader');
+        const cleanText = text
+            .replace(/\\n/g, '\n')  
+            .replace(/^"|"$/g, '')  
+            .trim();
+    
 
+        const formatted = cleanText
+            .split('\n\n')
+            .map(p => p.trim())
+            .filter(p => p)
+            .map(p => `<p class="analysis-paragraph">${p}</p>`)
+            .join('');
+    
+        console.log('Formatted analysis:', formatted.substring(0, 100) + '...');
+        return formatted;
+    }
+    
+    function handleVideoError() {
+        console.log('Handling video error');
+        const videoSection = document.querySelector('.video-section');
+        if (videoSection) {
+            videoSection.innerHTML = `
+                <div class="video-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Failed to load video</p>
+                    <button class="retry-btn" onclick="location.reload()">
+                        <i class="fas fa-redo"></i> Retry
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    async function handleDownload() {
+        if (!window.currentAnalysis) return;
+    
+        const downloadButton = document.querySelector('.download-button');
+        const originalText = downloadButton.innerHTML;
+        
         try {
-            state.isGeneratingReport = true;
-            this.disabled = true;
-            toggleButtonLoader(true, buttonContent, buttonLoader);
-
+            downloadButton.disabled = true;
+            downloadButton.innerHTML = `
+                <i class="fas fa-spinner fa-spin"></i>
+                Generating report...
+            `;
+    
             const response = await fetch('/generate-report', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ analysis: state.currentAnalysis })
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    analysis: window.currentAnalysis
+                })
             });
-
-            if (!response.ok) throw new Error('Failed to generate report');
-
+    
             const data = await response.json();
-            
-            if (data.success && data.report_url) {
-                window.location.href = data.report_url;
-            } else {
-                throw new Error('Report generation failed');
+    
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to generate report');
             }
-
+    
+            if (data.report_url) {
+                window.location.href = data.report_url;
+            }
+    
         } catch (error) {
-            console.error('Report generation error:', error);
-            alert('Failed to generate report. Please try again.');
+            console.error('Download error:', error);
+            alert(error.message || 'Failed to download report. Please try again.');
         } finally {
-            state.isGeneratingReport = false;
-            this.disabled = false;
-            toggleButtonLoader(false, buttonContent, buttonLoader);
+            downloadButton.disabled = false;
+            downloadButton.innerHTML = originalText;
         }
     }
+    function clearSearch() {
+        elements.searchInput.value = '';
+        elements.suggestionsDropdown?.classList.remove('show');
+        elements.actionButton.disabled = true;
+    }
 
-    // Utility Functions
+    function handleSearchInput(e) {
+        const value = e.target.value.trim();
+        elements.actionButton.disabled = !value;
+    }
+
     function setLoading(loading) {
         state.isLoading = loading;
-        if (elements.searchButton) {
-            elements.searchButton.disabled = loading;
-            const buttonContent = elements.searchButton.querySelector('.button-content');
-            const buttonLoader = elements.searchButton.querySelector('.button-loader');
-            toggleButtonLoader(loading, buttonContent, buttonLoader);
+        elements.actionButton.disabled = loading;
+        elements.actionButton.classList.toggle('loading', loading);
+        
+        if (loading) {
+            showElement(elements.loadingSpinner);
+            hideElement(elements.resultsSection);
+            hideElement(elements.errorState);
+        } else {
+            hideElement(elements.loadingSpinner);
         }
-    }
-
-    function toggleButtonLoader(show, content, loader) {
-        content.style.display = show ? 'none' : 'flex';
-        loader.style.display = show ? 'flex' : 'none';
     }
 
     function showModal() {
@@ -281,47 +377,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.style.overflow = 'hidden';
     }
 
-    function hideModal() {
+    function closeModal() {
         elements.modal?.classList.add('hidden');
         document.body.style.overflow = '';
         state.currentAnalysis = null;
-        if (elements.downloadBtn) {
-            elements.downloadBtn.disabled = true;
+        if (elements.downloadButton) {
+            elements.downloadButton.disabled = true;
         }
-    }
-
-    function clearResults() {
-        if (elements.resultsGrid) {
-            elements.resultsGrid.innerHTML = '';
-        }
-    }
-
-    function showNoResults() {
-        elements.resultsGrid.innerHTML = `
-            <div class="no-results">
-                <i class="fas fa-search"></i>
-                <h3>No Results Found</h3>
-                <p>Try different search terms</p>
-            </div>
-        `;
-    }
-
-    function showError(message) {
-        hideElement(elements.loadingSpinner);
-        hideElement(elements.resultsSection);
-        showElement(elements.errorState);
-        const errorMessage = document.getElementById('errorMessage');
-        if (errorMessage) {
-            errorMessage.textContent = message;
-        }
-    }
-
-    function showElement(element) {
-        element?.classList.remove('hidden');
-    }
-
-    function hideElement(element) {
-        element?.classList.add('hidden');
     }
 
     function formatTimeRange(start, end) {
@@ -334,40 +396,23 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
 
-    function getConfidenceClass(confidence) {
-        switch(confidence.toLowerCase()) {
-            case 'high': return 'confidence-high';
-            case 'medium': return 'confidence-medium';
-            default: return 'confidence-low';
-        }
-    }
-
-    function formatAnalysis(text) {
-        if (!text) return '<p class="text-gray-500">No analysis available.</p>';
+    function formatAnalysisText(text) {
+        if (!text) return '<p>No analysis available.</p>';
         
-        try {
-            return text.split('\n\n')
-                .map(paragraph => paragraph.trim())
-                .filter(paragraph => paragraph)
-                .map(paragraph => `<p class="mb-4 last:mb-0">${paragraph}</p>`)
-                .join('');
-        } catch (e) {
-            console.error('Error formatting analysis:', e);
-            return `<p class="text-gray-500">Error formatting analysis text.</p>`;
-        }
+        return text.split('\n\n')
+            .map(p => p.trim())
+            .filter(p => p)
+            .map(p => `<p class="analysis-paragraph">${p}</p>`)
+            .join('');
     }
 
-    function handleVideoError() {
-        const videoContainer = document.querySelector('.video-container');
-        if (videoContainer) {
-            videoContainer.innerHTML = `
-                <div class="flex items-center justify-center w-full h-full bg-gray-100 rounded-lg">
-                    <div class="text-center p-4">
-                        <i class="fas fa-exclamation-circle text-red-500 text-2xl mb-2"></i>
-                        <p class="text-gray-600">Failed to load video</p>
-                    </div>
-                </div>
-            `;
-        }
+    function showElement(element) {
+        element?.classList.remove('hidden');
     }
+
+    function hideElement(element) {
+        element?.classList.add('hidden');
+    }
+
+    initializeEventListeners();
 });
