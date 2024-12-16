@@ -717,7 +717,10 @@ body {
     background: white;
 }
 
+/* Add these styles to style.css */
+
 .download-button {
+    position: relative;
     padding: 8px 24px;
     background: var(--green-primary);
     color: white;
@@ -728,12 +731,37 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .download-button:disabled {
     background: var(--grey-300);
     cursor: not-allowed;
+}
+
+.download-button:not(:disabled):hover {
+    background: var(--green-hover);
+    transform: translateY(-1px);
+}
+
+.download-button .button-content,
+.download-button .button-loader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.download-button .button-loader {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.download-button .fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .download-button:not(:disabled):hover {

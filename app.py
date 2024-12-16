@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import uuid
 from functools import wraps
 import requests
+from report_generator import ReportGenerator
 
 app = Flask(__name__)
 load_dotenv()
@@ -152,6 +153,7 @@ def analyze(video_id):
         }), 500
     
 
+
 @app.route('/generate-report', methods=['POST'])
 @handle_errors
 def generate_report():
@@ -164,11 +166,16 @@ def generate_report():
             return jsonify({'error': 'Analysis text is required'}), 400
         
         report_id = str(uuid.uuid4())[:8]
-        filename = f"report_{report_id}.txt"
+        filename = f"report_{report_id}.pdf"
         filepath = os.path.join(REPORTS_DIR, filename)
-        
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(analysis_text)
+
+        report_gen = ReportGenerator()
+       
+        report_gen.generate_report(
+            report_id=report_id,
+            report_text=analysis_text,
+            output_filename=filepath
+        )
         
         return jsonify({
             'success': True,
@@ -177,7 +184,10 @@ def generate_report():
         
     except Exception as e:
         app.logger.error(f"Report Generation Error: {str(e)}")
-        return jsonify({'error': 'Failed to generate report', 'details': str(e)}), 500
+        return jsonify({
+            'error': 'Failed to generate report', 
+            'details': str(e)
+        }), 500
 
 @app.route('/download-report/<filename>')
 @handle_errors
@@ -190,7 +200,8 @@ def download_report(filename):
         return send_file(
             filepath,
             as_attachment=True,
-            download_name=f"video_analysis_report_{filename}"
+            download_name=f"video_analysis_report_{filename}",
+            mimetype='application/pdf'
         )
         
     except Exception as e:

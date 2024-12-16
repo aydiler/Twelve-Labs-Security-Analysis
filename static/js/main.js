@@ -307,18 +307,20 @@ function createResultCard(result) {
     }
 
     async function handleDownload() {
-        if (!window.currentAnalysis) return;
-    
+        if (!window.currentAnalysis) {
+            console.error('No analysis available for download');
+            return;
+        }
+
         const downloadButton = document.querySelector('.download-button');
-        const originalText = downloadButton.innerHTML;
-        
+        const buttonContent = downloadButton.querySelector('.button-content');
+        const buttonLoader = downloadButton.querySelector('.button-loader');
+
         try {
             downloadButton.disabled = true;
-            downloadButton.innerHTML = `
-                <i class="fas fa-spinner fa-spin"></i>
-                Generating report...
-            `;
-    
+            buttonContent.classList.add('hidden');
+            buttonLoader.classList.remove('hidden');
+
             const response = await fetch('/generate-report', {
                 method: 'POST',
                 headers: {
@@ -328,23 +330,33 @@ function createResultCard(result) {
                     analysis: window.currentAnalysis
                 })
             });
-    
-            const data = await response.json();
-    
+
             if (!response.ok) {
+                const data = await response.json();
                 throw new Error(data.error || 'Failed to generate report');
             }
-    
+
+            const data = await response.json();
+
             if (data.report_url) {
-                window.location.href = data.report_url;
+                const link = document.createElement('a');
+                link.href = data.report_url;
+                link.setAttribute('download', '');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                throw new Error('No report URL received');
             }
-    
+
         } catch (error) {
             console.error('Download error:', error);
-            alert(error.message || 'Failed to download report. Please try again.');
+            alert('Failed to download report. Please try again.');
         } finally {
+ 
             downloadButton.disabled = false;
-            downloadButton.innerHTML = originalText;
+            buttonContent.classList.remove('hidden');
+            buttonLoader.classList.add('hidden');
         }
     }
     function clearSearch() {
