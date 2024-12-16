@@ -71,10 +71,8 @@ def search():
             options=["visual"]
         )
         
-        # Format the response with video URLs
         formatted_results = []
         for clip in search_results.data:
-            # Get video URL for each result
             try:
                 headers = {
                     "x-api-key": API_KEY,
@@ -84,18 +82,22 @@ def search():
                     f"{BASE_URL}/indexes/{INDEX_ID}/videos/{clip.video_id}",
                     headers=headers
                 )
-                video_url = url_response.json().get('hls', {}).get('video_url')
-            except:
-                video_url = None
+                video_data = url_response.json()
+                video_url = video_data.get('hls', {}).get('video_url')
+                video_duration = video_data.get('metadata', {}).get('duration', 0)
                 
-            formatted_results.append({
-                'video_id': clip.video_id,
-                'score': round(clip.score, 2),
-                'confidence': 'High' if clip.score > 0.7 else 'Medium',
-                'start': clip.start,
-                'end': clip.end,
-                'video_url': video_url
-            })
+                formatted_results.append({
+                    'video_id': clip.video_id,
+                    'score': clip.score,  
+                    'confidence': 'High' if clip.score > 0.7 else 'Medium',
+                    'start': clip.start,
+                    'end': clip.end,
+                    'duration': video_duration,
+                    'video_url': video_url
+                })
+            except Exception as e:
+                app.logger.error(f"Error getting video URL: {str(e)}")
+                continue
         
         return jsonify(formatted_results)
         

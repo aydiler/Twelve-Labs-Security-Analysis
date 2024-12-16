@@ -44,17 +44,17 @@
                 </div>
                 <!-- Search Suggestions -->
                 <div class="suggestions-dropdown" id="suggestionsDropdown">
-                    <div class="suggestion-item" data-value="A baby bite a finger">
-                        <i class="fas fa-history"></i>
-                        <span class="suggestion-text">A baby bite a finger</span>
-                    </div>
-                    <div class="suggestion-item" data-value="People walking on street">
-                        <i class="fas fa-history"></i>
-                        <span class="suggestion-text">People walking on street</span>
-                    </div>
                     <div class="suggestion-item" data-value="Car accident on highway">
                         <i class="fas fa-history"></i>
                         <span class="suggestion-text">Car accident on highway</span>
+                    </div>
+                    <div class="suggestion-item" data-value="Fight at street">
+                        <i class="fas fa-history"></i>
+                        <span class="suggestion-text">Fight at street</span>
+                    </div>
+                    <div class="suggestion-item" data-value="Paranormal activity identified">
+                        <i class="fas fa-history"></i>
+                        <span class="suggestion-text">Paranormal activity identified</span>
                     </div>
                 </div>
                 <!-- Action Button -->
@@ -155,9 +155,9 @@
             };
 
             const suggestions = [
-                'A baby bite a finger',
-                'People walking on street',
-                'Car accident on highway'
+                'Car accident on highway',
+                'Fight at street',
+                'Paranormal activity identified'
             ];
 
             function initializeEventListeners() {
@@ -240,35 +240,91 @@
             }
 
             function createResultCard(result) {
-                const card = document.createElement('div');
-                card.className = 'result-card';
-                
-                const confidence = result.confidence.toLowerCase();
-                const confidenceClass = `confidence-${confidence}`;
-                
-                card.innerHTML = `
-                    <div class="confidence-badge ${confidenceClass}">
-                        <i class="fas fa-check-circle"></i>
-                        ${result.confidence} Confidence
-                    </div>
-                    <div class="result-content">
-                        <div class="result-score">
-                            <i class="fas fa-chart-line"></i>
-                            <span>Match Score: ${Math.round(result.score)}%</span>
-                        </div>
-                        <div class="result-time">
-                            <i class="fas fa-clock"></i>
-                            <span>${formatTimeRange(result.start, result.end)}</span>
-                        </div>
-                        <button class="analyze-btn" onclick="analyzeVideo('${result.video_id}')">
-                            <i class="fas fa-microscope"></i>
-                            <span>Detailed Analysis</span>
-                        </button>
-                    </div>
-                `;
+                    const card = document.createElement('div');
+                    card.className = 'result-card';
+                    
+                    const confidence = result.confidence.toLowerCase();
+                    const confidenceClass = confidence === 'high' ? 'confidence-high' : 'confidence-medium';
+                    
+                    const score = result.score <= 1 ? (result.score * 100).toFixed(2) : result.score.toFixed(2);
+                    
+                    const videoDuration = result.duration || Math.max(result.end, 60);
+                    const highlightStart = (result.start / videoDuration) * 100;
+                    const highlightWidth = ((result.end - result.start) / videoDuration) * 100;
 
-                return card;
-            }
+                    card.innerHTML = `
+                        <div class="result-video-container ${result.video_url ? 'loading' : ''}">
+                            ${result.video_url ? `
+                                <div class="video-wrapper">
+                                    <div class="time-highlight" style="left: ${highlightStart}%; width: ${highlightWidth}%;"></div>
+                                    <video 
+                                        id="video-${result.video_id}"
+                                        class="result-video"
+                                        controls
+                                        preload="metadata"
+                                    >
+                                        <source src="${result.video_url}" type="application/x-mpegURL">
+                                    </video>
+                                    <div class="video-overlay">
+                                        <div class="confidence-badge ${confidenceClass}">
+                                            <i class="fas fa-check-circle"></i>
+                                            ${result.confidence}
+                                        </div>
+                                        <div class="score-badge">
+                                            <i class="fas fa-chart-line"></i>
+                                            ${score}%
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="video-placeholder">
+                                    <i class="fas fa-video-slash"></i>
+                                    <p>Video preview not available</p>
+                                </div>
+                            `}
+                        </div>
+                        <div class="result-content">
+                            <div class="result-info">
+                                <div class="result-time">
+                                    <i class="fas fa-clock"></i>
+                                    <span>${formatTimeRange(result.start, result.end)}</span>
+                                </div>
+                                <button class="analyze-btn" onclick="analyzeVideo('${result.video_id}')">
+                                    <i class="fas fa-microscope"></i>
+                                    <span>Detailed Analysis</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    // Initialize video player if URL exists
+                    if (result.video_url) {
+                        const videoContainer = card.querySelector('.result-video-container');
+                        const video = card.querySelector(`#video-${result.video_id}`);
+                        
+                        if (Hls.isSupported()) {
+                            const hls = new Hls();
+                            hls.loadSource(result.video_url);
+                            hls.attachMedia(video);
+                            
+                            video.addEventListener('loadedmetadata', () => {
+                                video.currentTime = result.start;
+                                videoContainer.classList.remove('loading');
+                            });
+
+                            hls.on(Hls.Events.ERROR, () => {
+                                videoContainer.innerHTML = `
+                                    <div class="video-error">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        <p>Failed to load video</p>
+                                    </div>
+                                `;
+                            });
+                        }
+                    }
+
+                    return card;
+                }
 
             window.analyzeVideo = async function(videoId) {
                 const modalContent = document.getElementById('analysisContent');
