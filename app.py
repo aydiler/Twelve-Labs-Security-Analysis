@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file,  send_from_directory
 from twelvelabs import TwelveLabs
 import os
 from dotenv import load_dotenv
@@ -51,6 +51,19 @@ def handle_errors(f):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+SAMPLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sample')
+
+@app.route('/sample/<path:filename>')
+def serve_sample_video(filename):
+    try:
+        return send_from_directory(SAMPLE_DIR, filename)
+    except Exception as e:
+        app.logger.error(f"Error serving video: {str(e)}")
+        return f"Error: {str(e)}", 404
+
+print(f"Sample directory path: {SAMPLE_DIR}")
 
 @app.route('/search', methods=['POST'])
 @handle_errors

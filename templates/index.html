@@ -65,7 +65,90 @@
                         <div class="button-spinner"></div>
                     </button>
                 </div>
+                </div>
             </div>
+
+            
+
+                <!-- Sample Videos Section -->
+                <div class="sample-videos">
+                    <div class="sample-header">
+                        <h2>Sample Surveillance Footage</h2>
+                        <p class="sample-description">Explore diverse categories of indexed surveillance footage in this application spanning accidents, violence, and paranormal activities.</p>
+                    </div>
+                    <div class="sample-videos-grid">
+                        <!-- Accident Sample -->
+                        <div class="sample-video-card">
+                            <div class="video-container">
+                                <video controls preload="metadata" class="sample-video">
+                                    <source src="../sample/accident.mp4" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <div class="confidence-badge confidence-high">
+                                    <i class="fas fa-check-circle"></i>
+                                    Accident
+                                </div>
+                            </div>
+                            <div class="video-info">
+                                <div class="result-info">
+                                    <div class="result-time">
+                                        <i class="fas fa-clock"></i>
+                                        <span>00:00 - 01:30</span>
+                                    </div>
+                                    <h3>Car Accident</h3>
+                                    <p>Highway collision footage from traffic camera <span class="highlight">#Surveillance</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fight Sample -->
+                        <div class="sample-video-card">
+                            <div class="video-container">
+                                <video controls preload="metadata" class="sample-video">
+                                    <source src="../sample/fight.mp4" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <div class="confidence-badge confidence-high">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    Violence
+                                </div>
+                            </div>
+                            <div class="video-info">
+                                <div class="result-info">
+                                    <div class="result-time">
+                                        <i class="fas fa-clock"></i>
+                                        <span>00:00 - 02:15</span>
+                                    </div>
+                                    <h3>Street Fight</h3>
+                                    <p>Public altercation captured on surveillance <span class="highlight">#CCTV</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Paranormal Sample -->
+                        <div class="sample-video-card">
+                            <div class="video-container">
+                                <video controls preload="metadata" class="sample-video">
+                                    <source src="../sample/paranormal.mp4" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                                <div class="confidence-badge confidence-medium">
+                                    <i class="fas fa-ghost"></i>
+                                    Paranormal
+                                </div>
+                            </div>
+                            <div class="video-info">
+                                <div class="result-info">
+                                    <div class="result-time">
+                                        <i class="fas fa-clock"></i>
+                                        <span>00:00 - 01:45</span>
+                                    </div>
+                                    <h3>Paranormal Activity</h3>
+                                    <p>Unexplained phenomena in warehouse <span class="highlight">#NightVision</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
         </div>
     </section>
 
@@ -171,6 +254,22 @@
                 elements.closeButton.addEventListener('click', closeModal);
                 elements.retryButton.addEventListener('click', handleSearch);
                 elements.downloadButton.addEventListener('click', handleDownload);
+                
+
+                document.addEventListener('DOMContentLoaded', function() {
+                const searchInput = document.getElementById('searchInput');
+                const sampleVideos = document.querySelector('.sample-videos');
+
+                searchInput.addEventListener('input', function() {
+                    if (this.value.trim().length > 0) {
+                        sampleVideos.style.display = 'none';
+                    } else {
+                        sampleVideos.style.display = 'block';
+                    }
+                });
+            });
+
+
 
 
                 document.addEventListener('click', (e) => {
@@ -194,6 +293,21 @@
                 const filtered = suggestions.filter(s => s.toLowerCase().includes(value));
                 updateSuggestions(filtered);
                 elements.actionButton.disabled = !value.trim();
+
+                // Show/hide sample videos based on input
+                const sampleVideos = document.querySelector('.sample-videos');
+                if (sampleVideos) {
+                    if (value.trim().length > 0) {
+                        sampleVideos.classList.add('hidden');
+                    } else {
+                        sampleVideos.classList.remove('hidden');
+                    }
+                }
+
+                // Always show suggestions dropdown when input has focus
+                if (document.activeElement === elements.searchInput) {
+                    elements.suggestionsDropdown.classList.add('show');
+                }
             }
 
             async function handleSearch() {
@@ -201,6 +315,12 @@
                 if (!query || state.isLoading) return;
 
                 setLoading(true);
+                
+                // Hide sample videos section
+                const sampleVideos = document.querySelector('.sample-videos');
+                if (sampleVideos) {
+                    sampleVideos.classList.add('hidden');
+                }
 
                 try {
                     const response = await fetch('/search', {
@@ -422,6 +542,13 @@
                 elements.searchInput.value = '';
                 elements.suggestionsDropdown.classList.remove('show');
                 elements.actionButton.disabled = true;
+
+                const sampleVideos = document.querySelector('.sample-videos');
+                if (sampleVideos) {
+                    sampleVideos.classList.remove('hidden');
+                }
+
+                hideElement(elements.resultsSection);
             }
 
             function selectSuggestion(text) {

@@ -1090,6 +1090,133 @@ body {
         transform: translateX(100%);
     }
 }
+
+
+.sample-videos {
+    max-width: 1200px;
+    margin: 48px auto;
+    padding: 0 24px;
+}
+
+.sample-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.sample-header h2 {
+    font-size: 28px;
+    color: var(--grey-900);
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.sample-description {
+    color: var(--grey-700);
+    font-size: 16px;
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.sample-videos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+}
+
+.sample-video-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.sample-video-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: var(--grey-900);
+}
+
+.sample-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-info {
+    padding: 20px;
+}
+
+.video-info h3 {
+    color: var(--grey-900);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 12px 0 8px;
+}
+
+.video-info p {
+    color: var(--grey-700);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.highlight {
+    color: var(--green-primary);
+    font-weight: 500;
+}
+
+.confidence-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+.confidence-badge i {
+    font-size: 14px;
+}
+
+.confidence-high {
+    color: #5AC903;
+}
+
+.confidence-medium {
+    color: #f59e0b;
+}
+
+@media (max-width: 1024px) {
+    .sample-videos-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .sample-videos-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .sample-header h2 {
+        font-size: 24px;
+    }
+}
+
+
 /* Loading placeholder for video */
 .result-video-container.loading::before {
     content: '';
