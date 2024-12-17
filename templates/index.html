@@ -52,9 +52,9 @@
                         <i class="fas fa-history"></i>
                         <span class="suggestion-text">Fight at the street</span>
                     </div>
-                    <div class="suggestion-item" data-value="Paranormal or abnormal activity identified">
+                    <div class="suggestion-item" data-value="Paranormal activity identified">
                         <i class="fas fa-history"></i>
-                        <span class="suggestion-text">Paranormal or abnormal activity identified</span>
+                        <span class="suggestion-text">Paranormal activity identified</span>
                     </div>
                 </div>
                 <!-- Action Button -->
@@ -343,9 +343,19 @@
                     setLoading(false);
                 }
             }
-
+            
+            function showNoResults() {
+                elements.resultsGrid.innerHTML = `
+                    <div class="no-results">
+                        <i class="fas fa-search"></i>
+                        <h3>No Results Found</h3>
+                        <p>We couldn't find any matches for your search.</p>
+                    </div>
+                `;
+                showElement(elements.resultsSection);
+            }
             function displayResults(results) {
-                if (!results.length) {
+                if (!results || !results.length) {
                     showNoResults();
                     return;
                 }

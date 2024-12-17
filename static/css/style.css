@@ -1200,6 +1200,32 @@ body {
     color: #f59e0b;
 }
 
+
+.no-results {
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--grey-50);
+    border-radius: 12px;
+    margin: 24px;
+}
+
+.no-results i {
+    font-size: 48px;
+    color: var(--grey-400);
+    margin-bottom: 16px;
+}
+
+.no-results h3 {
+    color: var(--grey-900);
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.no-results p {
+    color: var(--grey-700);
+    font-size: 16px;
+}
+
 @media (max-width: 1024px) {
     .sample-videos-grid {
         grid-template-columns: repeat(2, 1fr);
