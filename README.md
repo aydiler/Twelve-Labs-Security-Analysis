@@ -54,9 +54,6 @@ Try the Application Now:
     Surveillance Analysis Demo
 </a>
 
-Demo and Video Explanation:
-
---- To be added
 
 ## Features
 
