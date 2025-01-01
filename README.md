@@ -2,12 +2,12 @@
 <div align="center">
   <h3 align="center">Surveillance Analysis Tool</h3>
   <p align="center">
-    Automatically detect and highlight key events in surveillance video footage
+    Search efficiently and highlight key events in surveillance video footage
     <br />
     <a href="https://github.com/Hrishikesh332/Twelve-Labs-Survillance-Aanlysis">Explore the docs »</a>
     <br />
     <br />
-    <a href="https://twelve-labs-survillance-aanlysis.onrender.com">View Demo</a> ·
+    <a href="https://twelve-labs-surveillance-analysis.onrender.com/">View Demo</a> ·
     <a href="https://github.com/Hrishikesh332/Twelve-Labs-Survillance-Aanlysis/issues">Report Bug</a> ·
     <a href="https://github.com/Hrishikesh332/Twelve-Labs-Survillance-Aanlysis/issues">Request Feature</a>
   </p>
@@ -37,7 +37,7 @@ This tool saves time and improves efficiency in video monitoring, making it a mu
 
 Try the Application Now:
 
-<a href="https://twelve-labs-survillance-aanlysis.onrender.com" target="_blank" style="
+<a href="https://twelve-labs-surveillance-analysis.onrender.com/" target="_blank" style="
     display: inline-block;
     padding: 12px 24px;
     font-size: 18px;
@@ -54,6 +54,18 @@ Try the Application Now:
     Surveillance Analysis Demo
 </a>
 
+Demo and Video Explanation -
+
+  [![Watch the video](https://img.youtube.com/vi/fHRdb8sGd-w/hqdefault.jpg)](https://youtu.be/fHRdb8sGd-w?si=49rNsg3khflUkWxZ)
+
+
+Demo 1 - Car Accident on the Highway
+
+![](https://github.com/Hrishikesh332/Twelve-Labs-Surveillance-Analysis/blob/main/src/demo-surveillance-1.gif)
+
+Demo 2 - Paranormal Activty Identified
+
+![](https://github.com/Hrishikesh332/Twelve-Labs-Surveillance-Analysis/blob/main/src/demo-surveillance-2.gif)
 
 ## Features
 
@@ -63,7 +75,7 @@ Try the Application Now:
 
 🧠 **AI Driven Insights Report**: Accurate and efficient surveillance analysis report.
 
-![](https://github.com/Hrishikesh332/Twelve-Labs-Survillance-Aanlysis/blob/main/src/workflow-app.png)
+![](https://github.com/Hrishikesh332/Twelve-Labs-Surveillance-Analysis/blob/main/src/workflow.png)
 
 ## Tech Stack
 
