@@ -461,6 +461,7 @@
                 const downloadButton = document.querySelector('.download-button');
                 const modal = document.getElementById('analysisModal');
 
+                // Show modal and display loading spinner
                 modal.classList.remove('hidden');
                 modalContent.innerHTML = `
                     <div class="spinner">
@@ -471,6 +472,7 @@
                 downloadButton.disabled = true;
 
                 try {
+                    // Log analysis request and fetch results from server
                     const response = await fetch(`/analyze/${videoId}`);
                     const data = await response.json();
                     console.log('Analysis response received');

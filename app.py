@@ -16,6 +16,8 @@ INDEX_ID = os.getenv('INDEX_ID')
 BASE_URL = "https://api.twelvelabs.io/v1.2"
 REPORTS_DIR = os.path.join('static', 'reports')
 
+
+print(INDEX_ID)
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
 client = TwelveLabs(api_key=API_KEY)
@@ -91,10 +93,13 @@ def search():
                     "x-api-key": API_KEY,
                     "Content-Type": "application/json"
                 }
+                print(headers)
+                print(f"{BASE_URL}/indexes/{INDEX_ID}/videos/{clip.video_id}")
                 url_response = requests.get(
                     f"{BASE_URL}/indexes/{INDEX_ID}/videos/{clip.video_id}",
                     headers=headers
                 )
+                
                 video_data = url_response.json()
                 video_url = video_data.get('hls', {}).get('video_url')
                 video_duration = video_data.get('metadata', {}).get('duration', 0)

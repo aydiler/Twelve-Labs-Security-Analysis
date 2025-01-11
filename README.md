@@ -7,7 +7,7 @@
     <a href="https://github.com/Hrishikesh332/Twelve-Labs-Security-Analysis">Explore the docs »</a>
     <br />
     <br />
-    <a href="https://twelve-labs-security-analysis.onrender.com">View Demo</a> ·
+    <a href="https://twelvelabs-security-analysis.onrender.com/">View Demo</a> ·
     <a href="https://github.com/Hrishikesh332/Twelve-Labs-Security-Analysis/issues">Report Bug</a> ·
     <a href="https://github.com/Hrishikesh332/Twelve-Labs-Security-Analysis/issues">Request Feature</a>
   </p>
@@ -37,7 +37,7 @@ This tool saves time and improves efficiency in video monitoring, making it a mu
 
 Try the Application Now:
 
-<a href="https://twelve-labs-survillance-aanlysis.onrender.com" target="_blank" style="
+<a href="https://twelvelabs-security-analysis.onrender.com/" target="_blank" style="
     display: inline-block;
     padding: 12px 24px;
     font-size: 18px;
@@ -56,7 +56,15 @@ Try the Application Now:
 
 Demo and Video Explanation:
 
---- To be added
+[![Watch the video](https://img.youtube.com/vi/fHRdb8sGd-w/hqdefault.jpg)](https://youtu.be/fHRdb8sGd-w?si=_YQNRZ_MvoDB7A3C)
+
+Demo 1 - Car Accident on the Highway
+
+![](https://github.com/Hrishikesh332/Twelve-Labs-Security-Analysis/blob/main/src/demo-surveillance-1.gif)
+
+Demo 2 - Paranormal Activty Identified
+
+![](https://github.com/Hrishikesh332/Twelve-Labs-Security-Analysis/blob/main/src/demo-surveillance-2.gif)
 
 ## Features
 
@@ -66,7 +74,7 @@ Demo and Video Explanation:
 
 🧠 **AI Driven Insights Report**: Accurate and efficient security analysis report.
 
-![](https://github.com/Hrishikesh332/Twelve-Labs-Survillance-Aanlysis/blob/main/src/workflow-app.png)
+![](https://github.com/Hrishikesh332/Twelve-Labs-Security-Aanlysis/blob/main/src/workflow-app.png)
 
 ## Tech Stack
 
@@ -82,13 +90,13 @@ To run the **Security Analysis Tool** locally, follow these steps -
 ### Step 1 - Clone the Project
 
 ```bash
-git clone https://github.com/Hrishikesh332/Twelve-Labs-Survillance-Aanlysis.git
+git clone https://github.com/Hrishikesh332/Twelve-Labs-Security-Analysis.git
 ```
 
 Install Dependencies
 
 ```
- cd Twelve-Labs-Survillance-Aanlysis
+ cd Twelve-Labs-Security-Aanlysis
  
  pip install -r requirements.txt
 ```
