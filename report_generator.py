@@ -89,7 +89,7 @@ class ReportGenerator:
             ['Report ID:', report_id],
             ['Generated Date:', current_time.strftime("%Y-%m-%d %H:%M:%S")],
             ['Priority Level:', 'HIGH'],
-            ['Analysis Type:', 'VIDEO SURVEILLANCE'],
+            ['Analysis Type:', 'VIDEO SECURITY'],
         ]
 
         table = Table(metadata, colWidths=[2.5*inch, 4*inch])
@@ -112,7 +112,7 @@ class ReportGenerator:
 
         return table
 
-    def generate_report(self, report_id, report_text, output_filename="enhanced_surveillance_report.pdf", video_path=None):
+    def generate_report(self, report_id, report_text, output_filename="enhanced_security_report.pdf", video_path=None):
         
         doc = SimpleDocTemplate(
             output_filename,
@@ -126,7 +126,7 @@ class ReportGenerator:
         elements = []
 
         elements.append(HeaderFooter("header"))
-        elements.append(Paragraph("SURVEILLANCE ANALYSIS REPORT", self.title_style))
+        elements.append(Paragraph("SECURITY ANALYSIS REPORT", self.title_style))
         elements.append(Spacer(1, 20))
         elements.append(self.create_metadata_section(report_id))
         elements.append(Spacer(1, 20))
@@ -141,7 +141,7 @@ class ReportGenerator:
 
                     img = Image(thumbnail_path, width=6*inch, height=4*inch)
                     elements.append(img)
-                    elements.append(Paragraph("Video Surveillance Footage", self.section_style))
+                    elements.append(Paragraph("Video Security Footage", self.section_style))
 
                     os.remove(thumbnail_path)
                 cap.release()
