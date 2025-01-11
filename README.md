@@ -60,11 +60,11 @@ Demo and Video Explanation:
 
 Demo 1 - Car Accident on the Highway
 
-![](https://github.com/Hrishikesh332/Twelve-Labs-Security-Analysis/blob/main/src/demo-surveillance-1.gif)
+![](https://github.com/Hrishikesh332/Twelve-Labs-Security-Analysis/blob/main/src/demo-security-1.gif)
 
 Demo 2 - Paranormal Activty Identified
 
-![](https://github.com/Hrishikesh332/Twelve-Labs-Security-Analysis/blob/main/src/demo-surveillance-2.gif)
+![](https://github.com/Hrishikesh332/Twelve-Labs-Security-Analysis/blob/main/src/demo-security-2.gif)
 
 ## Features
 
